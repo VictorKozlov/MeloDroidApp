@@ -1,0 +1,17 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"  xmlns:melodroid="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_shuffle"
+        android:icon="@drawable/melodroid_shuffle"
+        android:orderInCategory="1"
+        melodroid:showAsAction="always"
+        android:title="Shuffle"/>
+
+    <item
+        android:id="@+id/action_end"
+        android:icon="@drawable/melodroid_end"
+        android:orderInCategory="2"
+        melodroid:showAsAction="always"
+        android:title="End"/>
+
+</menu>
