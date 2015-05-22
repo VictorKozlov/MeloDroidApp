@@ -1,6 +1,6 @@
 package ch.nikvic.melodroid;
 
-import android.support.v7.app.ActionBarActivity;
+import android.app.Activity;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,17 +16,77 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.view.MenuItem;
 import android.view.View;
 import ch.nikvic.melodroid.MusicService.MusicBinder;
+import android.widget.MediaController.MediaPlayerControl;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends Activity implements MediaPlayerControl {
 
     private ArrayList<Song> songList;
     private ListView songView;
-    private MusicService musicSrv;
     private Intent playIntent;
     private boolean musicBound=false;
+    private MusicController controller;
+    private MusicService musicService;
+
+
+    public void songPicked(View view){
+        musicService.setSong(Integer.parseInt(view.getTag().toString()));
+        musicService.playSong();
+    }
+
+    //Controls für next und previous etc.
+    private void setController(){
+        controller = new MusicController(this);
+        controller.setMediaPlayer(this);
+        controller.setAnchorView(findViewById(R.id.song_list));
+        controller.setEnabled(true);
+
+        controller.setPrevNextListeners(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playNext();
+            }
+        }, new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playPrev();
+            }
+        });
+    }
+
+    private void playNext(){
+        musicService.playNext();
+        controller.show(0);
+    }
+
+    private void playPrev(){
+        musicService.playPrev();
+        controller.show(0);
+    }
+
+    //verleiht den Hauptmenu-Punkten ihre Funktion
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_shuffle:
+                //shuffle
+                break;
+            case R.id.action_end:
+                stopService(playIntent);
+                musicService =null;
+                System.exit(0);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopService(playIntent);
+        musicService =null;
+        super.onDestroy();
+    }
 
     @Override
     protected void onStart() {
@@ -55,6 +115,7 @@ public class MainActivity extends ActionBarActivity {
 
         SongAdapter songAdptr = new SongAdapter(this, songList);
         songView.setAdapter(songAdptr);
+        setController();
     }
 
     //connect to the service
@@ -64,9 +125,9 @@ public class MainActivity extends ActionBarActivity {
         public void onServiceConnected(ComponentName name, IBinder service) {
             MusicBinder binder = (MusicBinder)service;
             //get service
-            musicSrv = binder.getService();
+            musicService = binder.getService();
             //pass list
-            musicSrv.setList(songList);
+            musicService.setList(songList);
             musicBound = true;
         }
 
@@ -102,5 +163,69 @@ public class MainActivity extends ActionBarActivity {
             }
             while (musicCursor.moveToNext());
         }
+    }
+
+    @Override
+    public void start() {
+        musicService.go();
+    }
+
+    @Override
+    public void pause() {
+        musicService.pausePlayer();
+    }
+
+    @Override
+    public int getDuration() {
+        if(musicService!=null && musicBound && musicService.isPng()) {
+            return musicService.getDur();
+        }
+        else return 0;
+    }
+
+    @Override
+    public int getCurrentPosition() {
+        if(musicService!=null && musicBound && musicService.isPng()) {
+            return musicService.getPosition();
+        }
+        else return 0;
+    }
+
+    @Override
+    public void seekTo(int pos) {
+        musicService.seek(pos);
+    }
+
+    @Override
+    public boolean isPlaying() {
+        if(musicService!=null && musicBound) {
+            return musicService.isPng();
+        }
+        else return false;
+    }
+
+    @Override
+    public int getBufferPercentage() {
+        return 0;
+    }
+
+    @Override
+    public boolean canPause() {
+        return true;
+    }
+
+    @Override
+    public boolean canSeekBackward() {
+        return true;
+    }
+
+    @Override
+    public boolean canSeekForward() {
+        return true;
+    }
+
+    @Override
+    public int getAudioSessionId() {
+        return 0;
     }
 }
