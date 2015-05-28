@@ -8,6 +8,8 @@ import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
 import java.util.ArrayList;
+import java.util.Random;
+
 import android.net.Uri;
 import android.media.AudioManager;
 import android.os.PowerManager;
@@ -23,11 +25,14 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
     private final IBinder musicBind = new MusicBinder();
     private String songTitle="";
     private static final int NOTIFY_ID=1;
+    private boolean shuffle = false;
+    private Random rand;
 
     public void onCreate(){
         super.onCreate();
         songPosition = 0;
         player = new MediaPlayer();
+        rand = new Random();
     }
 
     public void initMusicPlayer(){
@@ -84,11 +89,15 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-
+        if(player.getCurrentPosition() > 0){
+            mp.reset();
+            playNext();
+        }
     }
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
+        mp.reset();
         return false;
     }
 
@@ -152,11 +161,25 @@ public class MusicService extends Service implements MediaPlayer.OnPreparedListe
 
     //nächster Song
     public void playNext(){
-        songPosition++;
-        if(songPosition > songs.size()) {
-            songPosition = 0;
+        if(shuffle){
+            int newSong = songPosition;
+            while(newSong==songPosition){
+                newSong=rand.nextInt(songs.size());
+            }
+            songPosition=newSong;
+        }
+        else{
+            songPosition++;
+            if(songPosition >= songs.size()) songPosition=0;
         }
         playSong();
+    }
+
+    public void setShuffle(){
+        if(shuffle){
+            shuffle = false;
+        }
+        else shuffle = true;
     }
 
 }

@@ -25,14 +25,21 @@ public class MainActivity extends Activity implements MediaPlayerControl {
     private ArrayList<Song> songList;
     private ListView songView;
     private Intent playIntent;
-    private boolean musicBound=false;
+    private boolean musicBound = false;
     private MusicController controller;
     private MusicService musicService;
+    private boolean paused = false;
+    private boolean playbackPaused = false;
 
 
     public void songPicked(View view){
         musicService.setSong(Integer.parseInt(view.getTag().toString()));
         musicService.playSong();
+        if(playbackPaused){
+            setController();
+            playbackPaused=false;
+        }
+        controller.show(0);
     }
 
     //Controls für next und previous etc.
@@ -57,11 +64,19 @@ public class MainActivity extends Activity implements MediaPlayerControl {
 
     private void playNext(){
         musicService.playNext();
+        if(playbackPaused){
+            setController();
+            playbackPaused=false;
+        }
         controller.show(0);
     }
 
     private void playPrev(){
         musicService.playPrev();
+        if(playbackPaused){
+            setController();
+            playbackPaused=false;
+        }
         controller.show(0);
     }
 
@@ -70,13 +85,14 @@ public class MainActivity extends Activity implements MediaPlayerControl {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_shuffle:
-                //shuffle
+                musicService.setShuffle();
                 break;
             case R.id.action_end:
                 stopService(playIntent);
                 musicService =null;
                 System.exit(0);
                 break;
+
         }
         return super.onOptionsItemSelected(item);
     }
@@ -172,6 +188,7 @@ public class MainActivity extends Activity implements MediaPlayerControl {
 
     @Override
     public void pause() {
+        playbackPaused = true;
         musicService.pausePlayer();
     }
 
@@ -202,6 +219,27 @@ public class MainActivity extends Activity implements MediaPlayerControl {
             return musicService.isPng();
         }
         else return false;
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        paused=true;
+    }
+
+    @Override
+    protected void onResume(){
+        super.onResume();
+        if(paused){
+            setController();
+            paused=false;
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        controller.hide();
+        super.onStop();
     }
 
     @Override
